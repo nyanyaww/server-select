@@ -43,6 +43,9 @@ def function(hasp_test:dict):
     return second_hash
 
 def add_new():
+    """
+    增加新的key
+    """
     pass
 
 if __name__ == "__main__":
