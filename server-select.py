@@ -2,6 +2,7 @@ import queue
 import socket
 import threading
 from select import select
+from time import time
 
 from MessageHandle import MessageHandle
 from server_config import get_host_ip
@@ -52,6 +53,7 @@ class server(object):
                 self.input_list.append(self.conn)
                 # 为连接的客户端单独创建一个消息队列，用来保存客户端发送的消息
                 self.receive_message_queue[self.conn] = queue.Queue()
+                print(self.std_input)
             else:
                 # 由于客户端连接进来时服务端接收客户端连接请求，将客户端加入到了监听列表中(input_list)，客户端发送消息将触发
                 # 所以判断是否是客户端对象触发
@@ -64,35 +66,7 @@ class server(object):
                             receive_data, str(self.address)))
                         # 将收到的消息放入到各客户端的消息队列中
                         # 将数据解析成哈希表
-                        self.message.parsing = receive_data
-                        # 如果解析出来的数据是完整的
-                        if self.message.parsing.get('state') == 'data receive success':
-                            # 把关键的信息提取出来
-                            client_name = self.message.parsing['ip']
-                            if not client_name in self.client_hash:
-                                self.client_hash[client_name] = client
-                            client_command = self.message.parsing.get(
-                                'command')
-                            client_message = self.message.parsing.get(
-                                'message')
-                            # 保存到对应名字的json文件夹下
-                            self.message.save(
-                                client_name, self.message.parsing)
-                            self.message.message_handle(
-                                client_name, client_command, client_message)
-                            server_send_command = 'receive state'
-                            server_send_message = 'ok'
-                        # 解析出来的数据表明或多或少都有问题
-                        else:
-                            client_name = client
-                            self.client_hash[client_name] = client
-                            server_send_command = 'receive state'
-                            server_send_message = 'error'
-                        # 将数据以一定形式编码成二进制
-                        self.message.encoding = (self.message.info_connect(
-                            'server', server_send_command, server_send_message), 'ascii')
-                        self.receive_message_queue[self.client_hash[client_name]].put(
-                            self.message.encoding)
+                        self.__message_handle(receive_data, client)
                         # 将回复操作放到output列表中，让select监听
                         if client not in self.output_list:
                             self.output_list.append(client)
@@ -101,9 +75,47 @@ class server(object):
                     # 客户端断开连接了，将客户端的监听从input列表中移除
                     self.input_list.remove(client)
                     # 移除客户端对象的消息队列
-                    del self.receive_message_queue[client]
+                    del self.receive_message_queue[self.client_hash[self.device_name]]
                     print("\n[input] Client {0} disconnected".format(
                         self.address))
+
+    def __message_handle(self, receive_data, client):
+        self.message.parsing = receive_data
+        # 如果解析出来的数据是完整的
+        if self.message.parsing.get('state') == 'data receive success':
+            # 把关键的信息提取出来
+            client_name = self.message.parsing['ip']
+            self.device_name = client_name
+            self.client_hash[client_name] = client
+            client_command = self.message.parsing.get(
+                'command')
+            client_message = self.message.parsing.get(
+                'message')
+            # 保存到对应名字的json文件夹下
+            self.message.save(
+                client_name, self.message.parsing)
+            self.message.message_handle(
+                client_name, client_command, client_message)
+            server_send_command = 'receive state'
+            server_send_message = 'ok'
+            # if client_name == 'phone' or client_name == 'pc':
+
+            # 将数据以一定形式编码成二进制
+            self.message.encoding = (self.message.info_connect(
+                'server', server_send_command, server_send_message), 'ascii')
+            print('parsing information received from \ndevice:{0} is \'{1} : {2}\''.format(
+                client_name, client_command, client_message))
+            self.receive_message_queue[self.client_hash[client_name]].put(
+                self.message.encoding)
+        # 解析出来的数据表明或多或少都有问题
+        else:
+            server_send_command = 'receive state'
+            server_send_message = 'error'
+            self.message.encoding = (self.message.info_connect(
+                'server', server_send_command, server_send_message), 'ascii')
+            print('no!!!!!!!!!')
+            print('your message is GG!!!!!!!!')
+            client.send(self.message.encoding)
 
     def __client_message_send(self):
          # 如果现在没有客户端请求,也没有客户端发送消息时，开始对发送消息列表进行处理
@@ -125,10 +137,20 @@ class server(object):
                 print("\n[output] Client  {} disconnected".format(
                     str(self.address)))
 
+    def __feed_dog(self):
+        for client in self.output_list:
+            send_data = self.message.info_connect('server','feed dog','feed dog')
+            self.message.encoding = (send_data,'ascii')
+            client.send(self.message.encoding)
+
+        
+
     def run(self):
         while True:
-            self.__client_message_receive()
-            self.__client_message_send()
+            p1 = multiprocessing.Process(target=self.__client_message_receive())
+            p2 = multiprocessing.Process(target=self.__client_message_send())
+            p1.start()
+            p2.start()
 
 
 if __name__ == "__main__":
