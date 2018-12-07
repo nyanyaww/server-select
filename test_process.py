@@ -1,33 +1,47 @@
-import multiprocessing
-import time
-
-def worker_1(interval):
-    print ("worker_1")
-    time.sleep(interval)
-    print ("end worker_1")
-
-def worker_2(interval):
-    print ("worker_2")
-    time.sleep(interval)
-    print ("end worker_2")
-
-def worker_3(interval):
-    print ("worker_3")
-    time.sleep(interval)
-    print ("end worker_3")
-
-if __name__ == "__main__":
-    while True:
-        p1 = multiprocessing.Process(target = worker_1, args = (2,))
-        p2 = multiprocessing.Process(target = worker_2, args = (3,))
-        p3 = multiprocessing.Process(target = worker_3, args = (4,))
-
-        p1.start()
-        p2.start()
-        p3.start()
-
-        print("The number of CPU is:" + str(multiprocessing.cpu_count()))
-        for p in multiprocessing.active_children():
-            print("child   p.name:" + p.name + "\tp.id" + str(p.pid))
-        print ("END!!!!!!!!!!!!!!!!!")
-        time.sleep(10)
+import socket
+import threading
+from server_config import get_host_ip
+ 
+ 
+class tcp_serv(object):
+    def serv_start(self):
+        # 创建套接字
+        serv_soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+ 
+        # 设置ip 及 Port
+        # 设置端口复用
+        serv_soc.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        serv_soc.bind((str(get_host_ip), 8086))
+ 
+        # 主动变为被动
+        serv_soc.listen(120)  # 最大接收客户端数量为120
+        while True:
+            client_soc, client_adr = serv_soc.accept()  # 接收客户端
+            print("---------------客户端接入---------------")
+            client = threading.Thread(target=self.client_conn, args=(client_soc,))  # 数据为元组
+            client.start()
+        serv_soc.close()  # 服务端关闭
+ 
+    def client_conn(self, client_soc):
+        """客户端 处理数据"""
+        while True:
+            rev_msg = client_soc.recv(1024).decode('utf-8')  # 接收的字节数 进行转码
+            print("这是客户端发的数据%s" % rev_msg)
+            if rev_msg:
+                # 向客户端发送数据
+                client_soc.send(rev_msg.encode('utf-8'))
+                # 数据收发完成 关闭
+            else:
+                # 无数据，客户端断开
+                print("客户断开链接 >>>>>")
+                client_soc.close()
+                break
+ 
+ 
+def main():
+    serv = tcp_serv()
+    serv.serv_start()  # 执行
+ 
+ 
+if __name__ == '__main__':
+    main()

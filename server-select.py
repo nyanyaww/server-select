@@ -52,7 +52,6 @@ class server(object):
                 self.input_list.append(self.conn)
                 # 为连接的客户端单独创建一个消息队列，用来保存客户端发送的消息
                 self.receive_message_queue[self.conn] = queue.Queue()
-                # send_message_queue[conn] = queue.Queue()
             else:
                 # 由于客户端连接进来时服务端接收客户端连接请求，将客户端加入到了监听列表中(input_list)，客户端发送消息将触发
                 # 所以判断是否是客户端对象触发
@@ -60,6 +59,7 @@ class server(object):
                     receive_data = client.recv(1024)
                     # 客户端未断开
                     if receive_data:
+                        # 打印一下收到的数据
                         print("received {0} from client {1}".format(
                             receive_data, str(self.address)))
                         # 将收到的消息放入到各客户端的消息队列中
@@ -125,15 +125,12 @@ class server(object):
                 print("\n[output] Client  {} disconnected".format(
                     str(self.address)))
 
-    def a(self):
-        self.__client_message_receive()
-        self.__client_message_send()
-
     def run(self):
         while True:
-            self.a()
+            self.__client_message_receive()
+            self.__client_message_send()
 
 
 if __name__ == "__main__":
-    respberry_server = server(8086,'')
+    respberry_server = server(8086)
     respberry_server.run()
