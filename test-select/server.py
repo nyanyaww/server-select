@@ -1,39 +1,100 @@
 from socket import *
-from sys import argv, exit
+from time import ctime
 import threading
-import time
-from server_config import get_host_ip
-sclient = socket(AF_INET, SOCK_STREAM)
-sclient.bind((str(get_host_ip), 8086))
-sclient.listen(5)
+import re
 
-usersock = {}
+HOST = ''
+PORT = 9999
+BUFSIZ = 1024
+ADDR = (HOST,PORT)
 
+tcpSerSock = socket(AF_INET,SOCK_STREAM)
+tcpSerSock.bind(ADDR)
+tcpSerSock.listen(5)
 
-def do(sock, user):
+clients = {} # username -> socket
+chatwith = {} # user1.socket -> user2.socket
+
+# clients字典中记录了连接的客户端的用户名和套接字的对应关系
+# chatwith字典中记录了通信双方的套接字的对应
+
+# messageTransform()处理客户端确定用户名之后发送的文本
+# 文本只有四种类型：
+#   None
+#   Quit
+#   To:someone
+#   其他文本
+def messageTransform(sock,user):
     while True:
-        data = sock.recv(1024)
-        if data == 'q':
-            del usersock[user]
+        data = sock.recv(BUFSIZ)
+        if not data:
+            if chatwith.has_key(sock):
+                chatwith[sock].send(data)
+                del chatwith[chatwith[sock]]
+                del chatwith[sock]
+            del clients[user]
             sock.close()
             break
+        if data=='Quit':
+            sock.send(data)
+            if chatwith.has_key(sock):
+                data = '%s.' % data
+                chatwith[sock].send(data)
+                del chatwith[chatwith[sock]]
+                del chatwith[sock]
+            del clients[user]
+            sock.close()
+            break
+        elif re.match('^To:.+', data) is not None:
+            data = data[3:]
+                if clients.has_key(data):
+                if data==user:
+                        sock.send('Please don\'t try to talk with yourself.')
+                else:
+                        chatwith[sock] = clients[data]
+                        chatwith[clients[data]] = sock
+                else:
+                sock.send('the user %s is not exist' % data)
         else:
-            for i in usersock.iterkeys():
-                if i <> user:
-                    usersock[i].send('%s say : %s   |  %s' % (
-                        user, data, time.strftime('%Y/%m/%d %x', time.localtime())))
+            if chatwith.has_key(sock):
+                chatwith[sock].send('[%s] %s: (%s)' % (ctime(),user,data))
+            else:
+                sock.send('Nobody is chating with you. Maybe the one talked with you is talking with someone else')
+             
 
-
-while True:
-    clients, addr = sclient.accept()
-    print '%s---%s ----connecting' % addr
-    username = clients.recv(1024)
-    if usersock.has_key(username):
-        clients.send('hasok')
-        clients.close()
-    else:
-        clients.send('ok')
-        print '%s online ' % username
-        usersock[username] = clients
-        t = threading.Thread(target=do, args=(clients, username))
-        t.start()
+# 每个客户端连接之后，都会启动一个新线程
+# 连接成功后需要输入用户名
+# 输入的用户名可能会：
+#   已存在
+#   (客户端直接输入ctrl+c退出)
+#   合法用户名
+def connectThread(sock,test): # client's socket
+    
+    user = None
+    while True: # receive the username
+        username = sock.recv(BUFSIZ)
+        if not username: # the client logout without input a name
+            print('The client logout without input a name')
+            break
+        if clients.has_key(username): # username existed
+            sock.send('Reuse')
+        else: # correct username
+            sock.send('OK')
+            clients[username] = sock # username -> socket
+            user = username
+            break
+    if not user:
+        sock.close()
+        return
+    print('The username is: %s' % user)
+    # get the correct username
+    
+    messageTransform(sock,user)
+            
+if __name__=='__main__':
+    while True:
+        print('...WAITING FOR CONNECTION')
+        tcpCliSock, addr = tcpSerSock.accept()
+        print('CONNECTED FROM: ', addr)
+        chat = threading.Thread(target = connectThread, args = (tcpCliSock,None))
+        chat.start()

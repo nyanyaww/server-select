@@ -1,9 +1,12 @@
 import queue
 import socket
+import threading
 from select import select
 
 from MessageHandle import MessageHandle
 from server_config import get_host_ip
+
+import multiprocessing
 
 
 class server(object):
@@ -122,12 +125,15 @@ class server(object):
                 print("\n[output] Client  {} disconnected".format(
                     str(self.address)))
 
+    def a(self):
+        self.__client_message_receive()
+        self.__client_message_send()
+
     def run(self):
         while True:
-            self.__client_message_receive()
-            self.__client_message_send()
+            self.a()
 
 
 if __name__ == "__main__":
-    respberry_server = server(8086)
+    respberry_server = server(8086,'')
     respberry_server.run()
