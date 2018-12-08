@@ -1,3 +1,5 @@
+# coding:utf-8
+import multiprocessing
 import queue
 import socket
 import threading
@@ -7,10 +9,22 @@ from time import time
 from MessageHandle import MessageHandle
 from server_config import get_host_ip
 
-import multiprocessing
+
+class FeedDog(object):
+    start_time = time()
+
+    def __init__(self):
+        pass
+
+    def run(self):
+        while True:
+            if time() - self.start_time >= 2:
+                self.start_time = time()
+                print('ok')
+        
 
 
-class server(object):
+class Server(object):
     # 客户端传来的数据保存在队列里面
     receive_message_queue = {}
     input_list = []
@@ -75,7 +89,7 @@ class server(object):
                     # 客户端断开连接了，将客户端的监听从input列表中移除
                     self.input_list.remove(client)
                     # 移除客户端对象的消息队列
-                    del self.receive_message_queue[self.client_hash[self.device_name]]
+                    del self.receive_message_queue[client]
                     print("\n[input] Client {0} disconnected".format(
                         self.address))
 
@@ -137,22 +151,21 @@ class server(object):
                 print("\n[output] Client  {} disconnected".format(
                     str(self.address)))
 
-    def __feed_dog(self):
-        for client in self.output_list:
-            send_data = self.message.info_connect('server','feed dog','feed dog')
-            self.message.encoding = (send_data,'ascii')
-            client.send(self.message.encoding)
-
-        
+    def __server_base(self):
+        self.__client_message_receive()
+        self.__client_message_send()
 
     def run(self):
         while True:
-            p1 = multiprocessing.Process(target=self.__client_message_receive())
-            p2 = multiprocessing.Process(target=self.__client_message_send())
-            p1.start()
-            p2.start()
+            self.__server_base()
 
 
 if __name__ == "__main__":
-    respberry_server = server(8086)
+    # hello = """
+    #         1.default
+    #         2.wtf
+    # """
+    # print(hello)
+    # key_server_config = input('>>')
+    respberry_server = Server(8086)
     respberry_server.run()
