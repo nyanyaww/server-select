@@ -23,9 +23,9 @@ def long_time_task(name):
 
 if __name__ == '__main__':
     print('Parent process %s.' % os.getpid())
-    p = Pool(4)
-    for i in range(5):
-        p.apply_async(long_time_task, args=(i,))
+    p = Pool(3)
+    p.apply_async(os.system, args=("python 1.py",))
+    p.apply_async(os.system, args=("python 2.py",))
     print('Waiting for all subprocesses done...')
     p.close()
     p.join()
