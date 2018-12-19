@@ -10,7 +10,8 @@ device = 'dog'
 
 message = MessageHandle()
 
-if __name__ == '__main__':
+
+def dog():
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	s.connect((host, port))
 	device_ip = device
@@ -18,12 +19,16 @@ if __name__ == '__main__':
 		sleep(10)
 		device_command = 'feed dog'
 		device_message = 'ok'
-		send_from_client = message.info_connect(
-				device_ip, device_command, device_message)
+		send_from_client = message.info_connect(device_ip, device_command, device_message)
 		message.encoding = (send_from_client, 'ascii')
 		s.send(message.encoding)
+		print(message.encoding)
 		data = s.recv(1024)
 		print('this is your input!\n{0}'.format(message.encoding))
 		print('-' * 60)
 		print('this is from server!\n{0}'.format(data))
 		print('-' * 60)
+
+
+if __name__ == '__main__':
+	dog()

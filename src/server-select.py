@@ -100,20 +100,21 @@ class Server(object):
 			client_name = self.message.parsing['ip']
 			self.device_name = client_name
 			self.client_hash[client_name] = client
-			client_command = self.message.parsing.get(
-					'command')
-			client_message = self.message.parsing.get(
-					'message')
+			client_command = self.message.parsing.get('command')
+			client_message = self.message.parsing.get('message')
 			# 保存到对应名字的json文件夹下
-			self.message.save(
-					client_name, self.message.parsing)
-			self.message.message_handle(
-					client_name, client_command, client_message)
+			self.message.save(client_name, self.message.parsing)
+			self.message.message_handle(client_name, client_command, client_message)
 			server_send_command = 'receive state'
 			server_send_message = 'ok'
 			# if client_name == 'phone' or client_name == 'pc':
-
-			# 将数据以一定形式编码成二进制
+			# if client_name == 'dog':
+			# 	self.message.encoding = (self.message.info_connect(
+			# 			'server', 'feed', 'ok'), 'ascii')
+			# 	self.receive_message_queue[self.client_hash['test']].put(
+			# 			self.message.encoding)
+			# else:
+				# 将数据以一定形式编码成二进制
 			self.message.encoding = (self.message.info_connect(
 					'server', server_send_command, server_send_message), 'ascii')
 			print('parsing information received from \ndevice:{0} is \'{1} : {2}\''.format(
@@ -156,12 +157,12 @@ class Server(object):
 			self.__client_message_send()
 
 	def run(self):
-		p = multiprocessing.Pool(processes=2)
-		p.apply_async(self._server_base)
-		p.apply_async(self.dog.run)
-		# p.apply_async(feed_dog)
-		p.close()
-		p.join()
+		# p = multiprocessing.Pool(processes=1)
+		# p.apply_async(self._server_base)
+		# p.apply_async(self.dog.run)
+		# p.close()
+		# p.join()
+		self._server_base()
 
 
 if __name__ == "__main__":
