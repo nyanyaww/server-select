@@ -1,7 +1,6 @@
 import socket
-import threading
-from server_config import get_host_ip
-from MessageHandle import MessageHandle
+from src.server_config import get_host_ip
+from src.MessageHandle import MessageHandle
 import multiprocessing
 
 

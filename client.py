@@ -1,7 +1,7 @@
 import socket
-from server_config import get_host_ip
+from src.server_config import get_host_ip
 import time
-from MessageHandle import MessageHandle
+from src.MessageHandle import MessageHandle
 import random
 
 host = str(get_host_ip())

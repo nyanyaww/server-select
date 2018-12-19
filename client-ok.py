@@ -2,8 +2,7 @@
 import socket
 import select
 import threading
-from time import sleep
-from server_config import get_host_ip
+from src.server_config import get_host_ip
 
 
 def start_client():
